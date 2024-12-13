@@ -5,9 +5,13 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    concurrency: ci-${{ github.ref }}
 
     steps:
       - name: Checkout
@@ -32,3 +36,4 @@ jobs:
         with:
           folder: build
           branch: gh-pages
+          clean: true
