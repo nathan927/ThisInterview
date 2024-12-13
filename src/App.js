@@ -1,10 +1,10 @@
 import React from 'react';
-import PerfectDrill from './components/PerfectDrill';
 
 function App() {
   return (
-    <div className="App">
-      <PerfectDrill />
+    <div style={{ padding: '20px' }}>
+      <h1>ThisInterview App</h1>
+      <p>If you can see this text, the app is working!</p>
     </div>
   );
 }
