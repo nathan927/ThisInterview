@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout } from 'antd';
 import styled from 'styled-components';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import PerfectDrill from './components/PerfectDrill';
 
 const { Content, Footer } = Layout;
@@ -23,28 +24,25 @@ const StyledFooter = styled(Footer)`
 
 const theme = createTheme({
   palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
+    mode: 'light',
   },
 });
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <StyledLayout>
-        <StyledContent>
-          <PerfectDrill />
-        </StyledContent>
-        <StyledFooter>
-          All Rights Reserved. ThisAI &copy; 2024
-        </StyledFooter>
-      </StyledLayout>
-    </ThemeProvider>
+    <Router basename="/ThisInterview">
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <StyledLayout>
+          <StyledContent>
+            <Routes>
+              <Route path="/" element={<PerfectDrill />} />
+            </Routes>
+          </StyledContent>
+          <StyledFooter>ThisInterview &copy;2023</StyledFooter>
+        </StyledLayout>
+      </ThemeProvider>
+    </Router>
   );
 }
 
