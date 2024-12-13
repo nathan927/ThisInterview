@@ -2,7 +2,7 @@
   "name": "thisinterview-perfect-drill",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://nathan927.github.io/ThisInterview/",
+  "homepage": "https://nathan927.github.io/ThisInterview",
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
     "@emotion/react": "^11.11.0",
