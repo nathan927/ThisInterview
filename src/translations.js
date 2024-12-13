@@ -50,8 +50,7 @@ export const translations = {
     speedNormal: 'Normal',
     speedFast: 'Fast',
     firstQuestion: 'First Question',
-    finalQuestion: 'Final Question',
-    modelAnswerPlaceholder: 'Enter model answer here...'
+    finalQuestion: 'Final Question'
   },
   zh: {
     title: 'ThisInterview : 完美面試操練',
@@ -104,7 +103,6 @@ export const translations = {
     speedNormal: '正常',
     speedFast: '快',
     firstQuestion: '第一題',
-    finalQuestion: '最後一題',
-    modelAnswerPlaceholder: '在此輸入標準答案...'
+    finalQuestion: '最後一題'
   }
 };

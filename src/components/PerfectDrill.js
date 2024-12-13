@@ -1,46 +1,26 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { styled } from '@mui/system';
 import {
-  Box,
   Button,
-  Container,
+  Box,
   Typography,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
   TextField,
-  DialogActions,
-  Snackbar,
-  Alert,
   IconButton,
-  Menu,
+  Paper,
+  Container,
+  Grid,
   MenuItem,
-  Tooltip,
-  Select,
-  FormControl,
-  InputLabel,
-  Slider,
-  styled,
-  Collapse,
+  Card,
+  CardContent,
+  CardActions,
 } from '@mui/material';
-import { keyframes } from '@mui/system';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
-import MicIcon from '@mui/icons-material/Mic';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft';
-import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
-import LanguageIcon from '@mui/icons-material/Language';
-import DeleteIcon from '@mui/icons-material/Delete';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import EditIcon from '@mui/icons-material/Edit';
-import CloseIcon from '@mui/icons-material/Close';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { translations } from '../translations';
+import AddIcon from '@mui/icons-material/Add';
+import SaveIcon from '@mui/icons-material/Save';
+import { useTranslation } from '../translations';
 
-const shimmer = keyframes`
+const shimmer = styled.keyframes`
   0% {
     background-position: -1000px 0;
   }
@@ -59,7 +39,7 @@ const LoadingBox = styled(Box)({
   borderRadius: '4px'
 });
 
-const shimmerTitle = keyframes`
+const shimmerTitle = styled.keyframes`
   0% {
     background-position: -200% center;
   }
@@ -146,7 +126,7 @@ const PerfectDrill = () => {
   const [selectedVoice, setSelectedVoice] = useState(null);
   const [readingSpeed, setReadingSpeed] = useState(1.4);
 
-  const t = translations[language];
+  const { t } = useTranslation(language);
 
   const handleLanguageClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -214,15 +194,15 @@ const PerfectDrill = () => {
     setCustomQuestions('');
   };
 
-  const nextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1 && (!isRecording || !isReading)) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
 
-  const previousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0 && (!isRecording || !isReading)) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
@@ -415,7 +395,7 @@ const PerfectDrill = () => {
               <Button
                 variant="contained"
                 startIcon={<ArrowBackIcon />}
-                onClick={previousQuestion}
+                onClick={handlePreviousQuestion}
                 disabled={currentQuestionIndex === 0}
               >
                 {t.previous}
@@ -431,7 +411,7 @@ const PerfectDrill = () => {
               <Button
                 variant="contained"
                 endIcon={<ArrowForwardIcon />}
-                onClick={nextQuestion}
+                onClick={handleNextQuestion}
                 disabled={currentQuestionIndex === questions.length - 1}
               >
                 {t.next}
