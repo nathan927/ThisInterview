@@ -2,7 +2,7 @@ import React from 'react';
 import { Layout } from 'antd';
 import styled from 'styled-components';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import PerfectDrill from './components/PerfectDrill';
 
 const { Content, Footer } = Layout;
@@ -30,7 +30,7 @@ const theme = createTheme({
 
 function App() {
   return (
-    <Router basename="/ThisInterview">
+    <Router>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <StyledLayout>
