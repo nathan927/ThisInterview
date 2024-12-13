@@ -5,9 +5,18 @@ on:
     branches:
       - main
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -21,6 +30,8 @@ jobs:
         run: |
           npm install
           npm run build
+        env:
+          CI: false
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
@@ -28,3 +39,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build
           force_orphan: true
+          enable_jekyll: false
+          allow_empty_commit: true
