@@ -544,9 +544,16 @@ const PerfectDrill = () => {
   );
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ my: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+    <Container maxWidth="lg">
+      <Box sx={{ my: { xs: 2, sm: 3, md: 4 } }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: { xs: 2, sm: 3, md: 4 },
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 2, sm: 0 }
+        }}>
           <StyledTitle variant="h4" component="h1">
             {t.title}
           </StyledTitle>
@@ -565,34 +572,45 @@ const PerfectDrill = () => {
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: { xs: 1, sm: 2 }, 
+          mb: { xs: 2, sm: 3, md: 4 },
+          flexWrap: 'wrap',
+          justifyContent: { xs: 'center', sm: 'flex-start' }
+        }}>
           <Button
             variant="contained"
             onClick={() => setShowUploadDialog(true)}
+            sx={{ minWidth: { xs: '45%', sm: 'auto' } }}
           >
             {t.inputQuestions}
           </Button>
           <Button
             variant="contained"
             onClick={importQuestions}
+            sx={{ minWidth: { xs: '45%', sm: 'auto' } }}
           >
             {t.importQuestions}
           </Button>
           <Button
             variant="contained"
             onClick={exportQuestions}
+            sx={{ minWidth: { xs: '45%', sm: 'auto' } }}
           >
             {t.exportQuestions}
           </Button>
           <Button
             variant="contained"
             onClick={saveSession}
+            sx={{ minWidth: { xs: '45%', sm: 'auto' } }}
           >
             {t.saveSession}
           </Button>
           <Button
             variant="contained"
             onClick={loadSession}
+            sx={{ minWidth: { xs: '45%', sm: 'auto' } }}
           >
             {t.loadSession}
           </Button>
@@ -600,6 +618,7 @@ const PerfectDrill = () => {
             variant="contained"
             color="error"
             onClick={handleClearAll}
+            sx={{ minWidth: { xs: '45%', sm: 'auto' } }}
           >
             {t.clearAll}
           </Button>
@@ -607,19 +626,52 @@ const PerfectDrill = () => {
 
         {questions.length > 0 ? (
           <Box>
-            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h6" gutterBottom>
+            <Paper 
+              elevation={3} 
+              sx={{ 
+                p: { xs: 2, sm: 3 }, 
+                mb: { xs: 2, sm: 3, md: 4 },
+                borderRadius: 2
+              }}
+            >
+              <Typography 
+                variant="h6" 
+                gutterBottom
+                sx={{ 
+                  fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                  fontWeight: 500
+                }}
+              >
                 {t.questionNumber(currentQuestionIndex + 1, questions.length)}
               </Typography>
-              <Typography variant="body1" paragraph>
+              <Typography 
+                variant="body1" 
+                paragraph
+                sx={{ 
+                  fontSize: { xs: '1rem', sm: '1.1rem' },
+                  whiteSpace: 'pre-wrap'
+                }}
+              >
                 {questions[currentQuestionIndex]}
               </Typography>
 
-              {renderQuestionControls()}
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: 1,
+                mt: 2,
+                justifyContent: { xs: 'center', sm: 'flex-start' }
+              }}>
+                {renderQuestionControls()}
+              </Box>
 
               {recordings[currentQuestionIndex] && (
                 <Box sx={{ mt: 2 }}>
-                  <audio src={recordings[currentQuestionIndex]} controls />
+                  <audio 
+                    src={recordings[currentQuestionIndex]} 
+                    controls 
+                    style={{ width: '100%', maxWidth: '500px' }}
+                  />
                 </Box>
               )}
 
@@ -627,6 +679,8 @@ const PerfectDrill = () => {
                 <Button
                   onClick={() => toggleModelAnswer(currentQuestionIndex)}
                   startIcon={showModelAnswer[currentQuestionIndex] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  fullWidth
+                  sx={{ mb: 1 }}
                 >
                   {t.modelAnswer}
                 </Button>
@@ -641,18 +695,27 @@ const PerfectDrill = () => {
                       [currentQuestionIndex]: e.target.value
                     }))}
                     placeholder={t.modelAnswerPlaceholder}
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 1 }}
                   />
                 </Collapse>
               </Box>
             </Paper>
 
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              gap: { xs: 1, sm: 2 },
+              flexWrap: { xs: 'wrap', sm: 'nowrap' }
+            }}>
               <Button
                 variant="contained"
                 startIcon={<KeyboardDoubleArrowLeftIcon />}
                 onClick={handleNavigateFirst}
                 disabled={currentQuestionIndex === 0}
+                sx={{ 
+                  minWidth: { xs: '45%', sm: 'auto' },
+                  display: { xs: 'none', sm: 'flex' }
+                }}
               >
                 {t.firstQuestion}
               </Button>
@@ -661,6 +724,7 @@ const PerfectDrill = () => {
                 startIcon={<ArrowBackIcon />}
                 onClick={handlePrevious}
                 disabled={currentQuestionIndex === 0}
+                sx={{ minWidth: { xs: '45%', sm: 'auto' } }}
               >
                 {t.previous}
               </Button>
@@ -669,6 +733,7 @@ const PerfectDrill = () => {
                 endIcon={<ArrowForwardIcon />}
                 onClick={handleNext}
                 disabled={currentQuestionIndex === questions.length - 1}
+                sx={{ minWidth: { xs: '45%', sm: 'auto' } }}
               >
                 {t.next}
               </Button>
@@ -677,20 +742,43 @@ const PerfectDrill = () => {
                 endIcon={<KeyboardDoubleArrowRightIcon />}
                 onClick={handleNavigateLast}
                 disabled={currentQuestionIndex === questions.length - 1}
+                sx={{ 
+                  minWidth: { xs: '45%', sm: 'auto' },
+                  display: { xs: 'none', sm: 'flex' }
+                }}
               >
                 {t.finalQuestion}
               </Button>
             </Box>
           </Box>
         ) : (
-          <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-            <Typography variant="h6" color="textSecondary">
+          <Paper 
+            elevation={3} 
+            sx={{ 
+              p: { xs: 3, sm: 4 }, 
+              textAlign: 'center',
+              borderRadius: 2
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              color="textSecondary"
+              sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}
+            >
               {t.noQuestions}
             </Typography>
           </Paper>
         )}
 
-        {renderVoiceControls()}
+        <Box sx={{ 
+          mt: { xs: 2, sm: 3 },
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: { xs: 'stretch', sm: 'center' },
+          gap: 2
+        }}>
+          {renderVoiceControls()}
+        </Box>
       </Box>
 
       {/* Hidden file inputs */}
@@ -713,10 +801,12 @@ const PerfectDrill = () => {
       <Dialog
         open={showUploadDialog}
         onClose={() => setShowUploadDialog(false)}
+        fullWidth
+        maxWidth="sm"
       >
         <DialogTitle>{t.uploadQuestions}</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ mb: 2 }}>
             {t.enterQuestions}
           </DialogContentText>
           <TextField
@@ -730,11 +820,11 @@ const PerfectDrill = () => {
             placeholder={t.placeholder}
           />
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setShowUploadDialog(false)}>
             {t.cancel}
           </Button>
-          <Button onClick={handleUploadQuestions}>
+          <Button onClick={handleUploadQuestions} variant="contained">
             {t.upload}
           </Button>
         </DialogActions>
@@ -744,8 +834,13 @@ const PerfectDrill = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
