@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -16,16 +16,62 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Card,
-  CardContent,
-  CardActions,
+  Tooltip,
+  Select,
+  FormControl,
+  InputLabel,
+  Slider,
+  styled,
+  Collapse,
 } from '@mui/material';
+import { keyframes } from '@mui/system';
 import StopIcon from '@mui/icons-material/Stop';
 import MicIcon from '@mui/icons-material/Mic';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft';
+import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
 import LanguageIcon from '@mui/icons-material/Language';
+import DeleteIcon from '@mui/icons-material/Delete';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { translations } from '../translations';
+
+const shimmer = keyframes`
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+`;
+
+const shimmerTitle = keyframes`
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+`;
+
+const StyledTitle = styled(Typography)(({ theme }) => ({
+  textAlign: 'center',
+  marginBottom: theme.spacing(5),
+  fontSize: '3rem',
+  fontWeight: 700,
+  background: 'linear-gradient(90deg, #007FFF, #0059B2 16.66%, #00838F 33.33%, #7B1FA2 50%, #C2185B 66.66%, #FF8F00 83.33%, #007FFF)',
+  backgroundSize: '200% auto',
+  color: 'transparent',
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  animation: `${shimmerTitle} 8s linear infinite`,
+  textShadow: '0 0 30px rgba(0,127,255,0.2)',
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '2.2rem',
+  },
+}));
 
 const PerfectDrill = () => {
   const [questions, setQuestions] = useState([]);
@@ -33,22 +79,50 @@ const PerfectDrill = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [customQuestions, setCustomQuestions] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [audioURL, setAudioURL] = useState('');
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [language, setLanguage] = useState('zh');
   const [anchorEl, setAnchorEl] = useState(null);
+  const [recordings, setRecordings] = useState({});
+  const [showModelAnswer, setShowModelAnswer] = useState({});
+  const [modelAnswers, setModelAnswers] = useState({});
   const fileInputRef = useRef(null);
   const sessionInputRef = useRef(null);
-  const [recordings, setRecordings] = useState({});
-  const [modelAnswers, setModelAnswers] = useState({});
-  const [showModelAnswer, setShowModelAnswer] = useState({});
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'info',
   });
+  const [isReading, setIsReading] = useState(false);
+  const speechUtterance = useRef(null);
+  const [availableVoices, setAvailableVoices] = useState([]);
+  const [selectedVoice, setSelectedVoice] = useState(null);
+  const [readingSpeed, setReadingSpeed] = useState(1.4);
 
   const t = translations[language];
+
+  useEffect(() => {
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      setAvailableVoices(voices);
+      if (voices.length > 0) {
+        const preferredVoice = voices.find(voice => 
+          language === 'zh' ? voice.lang.includes('zh') : voice.lang.includes('en')
+        ) || voices[0];
+        setSelectedVoice(preferredVoice);
+      }
+    };
+
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    return () => {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [language]);
 
   const handleLanguageClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -110,6 +184,73 @@ const PerfectDrill = () => {
       }
     }
     event.target.value = null;
+  };
+
+  const handleEditQuestion = (index) => {
+    setQuestions(prevQuestions => {
+      const newQuestions = [...prevQuestions];
+      newQuestions[index] = '';
+      return newQuestions;
+    });
+    setSnackbar({
+      open: true,
+      message: t.editSuccess,
+      severity: 'success',
+    });
+  };
+
+  const handleDeleteQuestion = (index) => {
+    setQuestions(prevQuestions => {
+      const newQuestions = [...prevQuestions];
+      newQuestions.splice(index, 1);
+      return newQuestions;
+    });
+    setRecordings(prev => {
+      const newRecordings = { ...prev };
+      delete newRecordings[index];
+      return newRecordings;
+    });
+    setModelAnswers(prev => {
+      const newAnswers = { ...prev };
+      delete newAnswers[index];
+      return newAnswers;
+    });
+    if (currentQuestionIndex >= questions.length - 1) {
+      setCurrentQuestionIndex(Math.max(0, questions.length - 2));
+    }
+    setSnackbar({
+      open: true,
+      message: t.deleteSuccess,
+      severity: 'success',
+    });
+  };
+
+  const handleClearAll = () => {
+    setQuestions([]);
+    setRecordings({});
+    setModelAnswers({});
+    setCurrentQuestionIndex(0);
+    setSnackbar({
+      open: true,
+      message: t.clearAllSuccess,
+      severity: 'success',
+    });
+  };
+
+  const handleNavigateFirst = () => {
+    setCurrentQuestionIndex(0);
+  };
+
+  const handleNavigateLast = () => {
+    setCurrentQuestionIndex(questions.length - 1);
+  };
+
+  const handlePrevious = () => {
+    setCurrentQuestionIndex(prev => Math.max(0, prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1));
   };
 
   const exportQuestions = () => {
@@ -216,8 +357,6 @@ const PerfectDrill = () => {
           newRecordings[index] = url;
         }
         setRecordings(newRecordings);
-        setAudioURL(newRecordings[0] || '');
-
         setSnackbar({
           open: true,
           message: t.loadSuccess,
@@ -245,11 +384,15 @@ const PerfectDrill = () => {
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
         const url = URL.createObjectURL(blob);
-        setAudioURL(url);
         setRecordings(prev => ({
           ...prev,
           [currentQuestionIndex]: url
         }));
+        setSnackbar({
+          open: true,
+          message: t.recordingStopped,
+          severity: 'success',
+        });
       };
 
       recorder.start();
@@ -271,29 +414,60 @@ const PerfectDrill = () => {
   };
 
   const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
       mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
+    }
+  };
+
+  const handleDeleteRecording = () => {
+    const url = recordings[currentQuestionIndex];
+    if (url) {
+      URL.revokeObjectURL(url);
+      setRecordings(prev => {
+        const newRecordings = { ...prev };
+        delete newRecordings[currentQuestionIndex];
+        return newRecordings;
+      });
       setSnackbar({
         open: true,
-        message: t.recordingStopped,
+        message: t.deleteAudioSuccess,
         severity: 'success',
       });
     }
   };
 
-  const previousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
-      setAudioURL(recordings[currentQuestionIndex - 1] || '');
+  const readQuestion = () => {
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      setIsReading(false);
+      return;
     }
+
+    const question = questions[currentQuestionIndex];
+    if (!question) return;
+
+    speechUtterance.current = new SpeechSynthesisUtterance(question);
+    speechUtterance.current.voice = selectedVoice;
+    speechUtterance.current.rate = readingSpeed;
+    speechUtterance.current.onend = () => setIsReading(false);
+    speechUtterance.current.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsReading(false);
+    };
+
+    setIsReading(true);
+    window.speechSynthesis.speak(speechUtterance.current);
   };
 
-  const nextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      setAudioURL(recordings[currentQuestionIndex + 1] || '');
-    }
+  const handleSpeedChange = (event, newValue) => {
+    setReadingSpeed(newValue);
+  };
+
+  const handleVoiceChange = (event) => {
+    const voice = availableVoices.find(v => v.name === event.target.value);
+    setSelectedVoice(voice);
   };
 
   const toggleModelAnswer = (index) => {
@@ -303,93 +477,189 @@ const PerfectDrill = () => {
     }));
   };
 
+  const renderVoiceControls = () => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
+      <FormControl sx={{ minWidth: 200 }}>
+        <InputLabel>{t.voice}</InputLabel>
+        <Select
+          value={selectedVoice?.name || ''}
+          onChange={handleVoiceChange}
+          label={t.voice}
+        >
+          {availableVoices.map((voice) => (
+            <MenuItem key={voice.name} value={voice.name}>
+              {`${voice.name} (${voice.lang})`}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      <Box sx={{ width: 200 }}>
+        <Typography gutterBottom>
+          {t.readingSpeed}: {readingSpeed}x
+        </Typography>
+        <Slider
+          value={readingSpeed}
+          onChange={handleSpeedChange}
+          min={0.5}
+          max={2}
+          step={0.1}
+          marks={[
+            { value: 0.5, label: t.speedSlow },
+            { value: 1, label: t.speedNormal },
+            { value: 2, label: t.speedFast },
+          ]}
+        />
+      </Box>
+    </Box>
+  );
+
+  const renderQuestionControls = () => (
+    <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+      <Tooltip title={isReading ? t.stopReading : t.startReading}>
+        <IconButton onClick={readQuestion} color={isReading ? 'secondary' : 'primary'}>
+          <VolumeUpIcon />
+        </IconButton>
+      </Tooltip>
+      {isRecording ? (
+        <Tooltip title={t.stopRecording}>
+          <IconButton onClick={stopRecording} color="secondary">
+            <StopIcon />
+          </IconButton>
+        </Tooltip>
+      ) : (
+        <Tooltip title={t.startRecording}>
+          <IconButton onClick={startRecording} color="primary">
+            <MicIcon />
+          </IconButton>
+        </Tooltip>
+      )}
+      {recordings[currentQuestionIndex] && (
+        <Tooltip title={t.deleteRecording}>
+          <IconButton onClick={handleDeleteRecording}>
+            <DeleteIcon />
+          </IconButton>
+        </Tooltip>
+      )}
+    </Box>
+  );
+
   return (
     <Container maxWidth="md">
       <Box sx={{ my: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Typography variant="h4" component="h1">
+          <StyledTitle variant="h4" component="h1">
             {t.title}
-          </Typography>
-          <IconButton onClick={handleLanguageClick}>
-            <LanguageIcon />
-          </IconButton>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleLanguageClose}
-          >
-            <MenuItem onClick={() => handleLanguageSelect('en')}>English</MenuItem>
-            <MenuItem onClick={() => handleLanguageSelect('zh')}>中文</MenuItem>
-          </Menu>
+          </StyledTitle>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton onClick={handleLanguageClick}>
+              <LanguageIcon />
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleLanguageClose}
+            >
+              <MenuItem onClick={() => handleLanguageSelect('en')}>English</MenuItem>
+              <MenuItem onClick={() => handleLanguageSelect('zh')}>中文</MenuItem>
+            </Menu>
+          </Box>
         </Box>
 
-        <Box sx={{ mb: 4 }}>
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            variant="outlined"
-            placeholder={t.questionPlaceholder}
-            value={customQuestions}
-            onChange={(e) => setCustomQuestions(e.target.value)}
-          />
-          <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-            <Button variant="contained" onClick={handleUploadQuestions}>
-              {t.addQuestion}
-            </Button>
-            <Button variant="outlined" onClick={importQuestions}>
-              Import
-            </Button>
-            <Button variant="outlined" onClick={exportQuestions}>
-              Export
-            </Button>
-            <Button variant="outlined" onClick={saveSession}>
-              {t.saveSession}
-            </Button>
-            <Button variant="outlined" onClick={loadSession}>
-              {t.loadSession}
-            </Button>
-          </Box>
+        <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
+          <Button
+            variant="contained"
+            onClick={() => setShowUploadDialog(true)}
+          >
+            {t.inputQuestions}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={importQuestions}
+          >
+            {t.importQuestions}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={exportQuestions}
+          >
+            {t.exportQuestions}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={saveSession}
+          >
+            {t.saveSession}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={loadSession}
+          >
+            {t.loadSession}
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleClearAll}
+          >
+            {t.clearAll}
+          </Button>
         </Box>
 
         {questions.length > 0 ? (
           <Box>
-            <Card sx={{ mb: 2 }}>
-              <CardContent>
-                <Typography variant="h6">
-                  Question {currentQuestionIndex + 1} of {questions.length}
-                </Typography>
-                <Typography variant="body1" sx={{ mt: 2 }}>
-                  {questions[currentQuestionIndex]}
-                </Typography>
-                {showModelAnswer[currentQuestionIndex] && (
-                  <Paper sx={{ mt: 2, p: 2, bgcolor: 'grey.100' }}>
-                    <Typography variant="body2">
-                      {modelAnswers[currentQuestionIndex] || t.noModelAnswer}
-                    </Typography>
-                  </Paper>
-                )}
-              </CardContent>
-              <CardActions>
-                <Button
-                  variant="contained"
-                  color={isRecording ? "secondary" : "primary"}
-                  startIcon={isRecording ? <StopIcon /> : <MicIcon />}
-                  onClick={isRecording ? stopRecording : startRecording}
-                >
-                  {isRecording ? t.stopRecording : t.startRecording}
-                </Button>
-                <Button onClick={() => toggleModelAnswer(currentQuestionIndex)}>
-                  {showModelAnswer[currentQuestionIndex] ? t.hideAnswer : t.showAnswer}
-                </Button>
-              </CardActions>
-            </Card>
+            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+              <Typography variant="h6" gutterBottom>
+                {t.questionNumber(currentQuestionIndex + 1, questions.length)}
+              </Typography>
+              <Typography variant="body1" paragraph>
+                {questions[currentQuestionIndex]}
+              </Typography>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+              {renderQuestionControls()}
+
+              {recordings[currentQuestionIndex] && (
+                <Box sx={{ mt: 2 }}>
+                  <audio src={recordings[currentQuestionIndex]} controls />
+                </Box>
+              )}
+
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  onClick={() => toggleModelAnswer(currentQuestionIndex)}
+                  startIcon={showModelAnswer[currentQuestionIndex] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                >
+                  {t.modelAnswer}
+                </Button>
+                <Collapse in={showModelAnswer[currentQuestionIndex]}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    value={modelAnswers[currentQuestionIndex] || ''}
+                    onChange={(e) => setModelAnswers(prev => ({
+                      ...prev,
+                      [currentQuestionIndex]: e.target.value
+                    }))}
+                    placeholder={t.modelAnswerPlaceholder}
+                    sx={{ mt: 2 }}
+                  />
+                </Collapse>
+              </Box>
+            </Paper>
+
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+              <Button
+                variant="contained"
+                startIcon={<KeyboardDoubleArrowLeftIcon />}
+                onClick={handleNavigateFirst}
+                disabled={currentQuestionIndex === 0}
+              >
+                {t.firstQuestion}
+              </Button>
               <Button
                 variant="contained"
                 startIcon={<ArrowBackIcon />}
-                onClick={previousQuestion}
+                onClick={handlePrevious}
                 disabled={currentQuestionIndex === 0}
               >
                 {t.previous}
@@ -397,34 +667,78 @@ const PerfectDrill = () => {
               <Button
                 variant="contained"
                 endIcon={<ArrowForwardIcon />}
-                onClick={nextQuestion}
+                onClick={handleNext}
                 disabled={currentQuestionIndex === questions.length - 1}
               >
                 {t.next}
               </Button>
+              <Button
+                variant="contained"
+                endIcon={<KeyboardDoubleArrowRightIcon />}
+                onClick={handleNavigateLast}
+                disabled={currentQuestionIndex === questions.length - 1}
+              >
+                {t.finalQuestion}
+              </Button>
             </Box>
           </Box>
         ) : (
-          <Typography variant="body1" sx={{ textAlign: 'center', my: 4 }}>
-            {t.noQuestions}
-          </Typography>
+          <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6" color="textSecondary">
+              {t.noQuestions}
+            </Typography>
+          </Paper>
         )}
+
+        {renderVoiceControls()}
       </Box>
 
+      {/* Hidden file inputs */}
       <input
         type="file"
-        ref={fileInputRef}
-        style={{ display: 'none' }}
         accept=".txt"
+        style={{ display: 'none' }}
+        ref={fileInputRef}
         onChange={handleFileUpload}
       />
       <input
         type="file"
-        ref={sessionInputRef}
-        style={{ display: 'none' }}
         accept=".json"
+        style={{ display: 'none' }}
+        ref={sessionInputRef}
         onChange={handleSessionUpload}
       />
+
+      {/* Dialogs */}
+      <Dialog
+        open={showUploadDialog}
+        onClose={() => setShowUploadDialog(false)}
+      >
+        <DialogTitle>{t.uploadQuestions}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t.enterQuestions}
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            fullWidth
+            multiline
+            rows={4}
+            value={customQuestions}
+            onChange={(e) => setCustomQuestions(e.target.value)}
+            placeholder={t.placeholder}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowUploadDialog(false)}>
+            {t.cancel}
+          </Button>
+          <Button onClick={handleUploadQuestions}>
+            {t.upload}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={snackbar.open}
