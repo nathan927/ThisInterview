@@ -1,71 +1,238 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { styled } from '@mui/system';
+import React, { useState, useRef } from 'react';
 import {
-  Button,
   Box,
-  Typography,
-  TextField,
-  IconButton,
-  Paper,
+  Button,
   Container,
-  Grid,
+  Typography,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  TextField,
+  DialogActions,
+  Snackbar,
+  Alert,
+  IconButton,
+  Menu,
   MenuItem,
   Card,
   CardContent,
   CardActions,
 } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
-import AddIcon from '@mui/icons-material/Add';
-import SaveIcon from '@mui/icons-material/Save';
+import MicIcon from '@mui/icons-material/Mic';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { useTranslation } from '../translations';
-
-const shimmer = styled.keyframes`
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-`;
-
-const LoadingBox = styled(Box)({
-  background: '#f6f7f8',
-  backgroundImage: 'linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%)',
-  backgroundSize: '2000px 100%',
-  animation: `${shimmer} 2s linear infinite`,
-  borderRadius: '4px'
-});
+import LanguageIcon from '@mui/icons-material/Language';
+import { translations } from '../translations';
 
 const PerfectDrill = () => {
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [customQuestions, setCustomQuestions] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioURL, setAudioURL] = useState('');
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [language, setLanguage] = useState('zh');
+  const [anchorEl, setAnchorEl] = useState(null);
+  const fileInputRef = useRef(null);
+  const sessionInputRef = useRef(null);
   const [recordings, setRecordings] = useState({});
-  const [language, setLanguage] = useState('en');
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const audioRef = useRef(new Audio());
-  
-  const { t } = useTranslation(language);
+  const [modelAnswers, setModelAnswers] = useState({});
+  const [showModelAnswer, setShowModelAnswer] = useState({});
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'info',
+  });
 
-  const handleAddQuestion = (question) => {
-    setQuestions([...questions, { text: question, modelAnswer: '' }]);
+  const t = translations[language];
+
+  const handleLanguageClick = (event) => {
+    setAnchorEl(event.currentTarget);
   };
 
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1 && (!isRecording || !isPlaying)) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
+  const handleLanguageClose = () => {
+    setAnchorEl(null);
   };
 
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0 && (!isRecording || !isPlaying)) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
+  const handleLanguageSelect = (lang) => {
+    setLanguage(lang);
+    handleLanguageClose();
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleUploadQuestions = () => {
+    if (!customQuestions.trim()) {
+      setSnackbar({
+        open: true,
+        message: t.pleaseEnterQuestions,
+        severity: 'warning',
+      });
+      return;
     }
+
+    const newQuestions = customQuestions.split('\n').filter(q => q.trim());
+    setQuestions(prevQuestions => [...prevQuestions, ...newQuestions]);
+    setCustomQuestions('');
+    setShowUploadDialog(false);
+    setSnackbar({
+      open: true,
+      message: t.uploadSuccess,
+      severity: 'success',
+    });
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      try {
+        const text = await file.text();
+        const newQuestions = text.split('\n').filter(q => q.trim());
+        setQuestions(prevQuestions => [...prevQuestions, ...newQuestions]);
+        setSnackbar({
+          open: true,
+          message: t.importSuccess,
+          severity: 'success',
+        });
+      } catch (error) {
+        console.error('Error reading file:', error);
+        setSnackbar({
+          open: true,
+          message: error.message,
+          severity: 'error',
+        });
+      }
+    }
+    event.target.value = null;
+  };
+
+  const exportQuestions = () => {
+    if (questions.length === 0) {
+      setSnackbar({
+        open: true,
+        message: t.noQuestions,
+        severity: 'warning',
+      });
+      return;
+    }
+
+    const content = questions.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'perfect_questions.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setSnackbar({
+      open: true,
+      message: t.exportSuccess,
+      severity: 'success',
+    });
+  };
+
+  const importQuestions = () => {
+    fileInputRef.current?.click();
+  };
+
+  const saveSession = async () => {
+    if (questions.length === 0) {
+      setSnackbar({
+        open: true,
+        message: t.noQuestions,
+        severity: 'warning',
+      });
+      return;
+    }
+
+    const session = {
+      questions: questions,
+      recordings: {},
+      modelAnswers: modelAnswers,
+      timestamp: new Date().toISOString(),
+    };
+
+    for (const [index, url] of Object.entries(recordings)) {
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+        session.recordings[index] = base64;
+      } catch (error) {
+        console.error('Error converting recording:', error);
+      }
+    }
+
+    const blob = new Blob([JSON.stringify(session)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `perfect_practice_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setSnackbar({
+      open: true,
+      message: t.saveSuccess,
+      severity: 'success',
+    });
+  };
+
+  const loadSession = () => {
+    sessionInputRef.current?.click();
+  };
+
+  const handleSessionUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      try {
+        const text = await file.text();
+        const session = JSON.parse(text);
+        
+        setQuestions(session.questions);
+        setCurrentQuestionIndex(0);
+        setModelAnswers(session.modelAnswers || {});
+
+        const newRecordings = {};
+        for (const [index, base64] of Object.entries(session.recordings)) {
+          const response = await fetch(base64);
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          newRecordings[index] = url;
+        }
+        setRecordings(newRecordings);
+        setAudioURL(newRecordings[0] || '');
+
+        setSnackbar({
+          open: true,
+          message: t.loadSuccess,
+          severity: 'success',
+        });
+      } catch (error) {
+        console.error('Error loading session:', error);
+        setSnackbar({
+          open: true,
+          message: error.message,
+          severity: 'error',
+        });
+      }
+    }
+    event.target.value = null;
   };
 
   const startRecording = async () => {
@@ -76,101 +243,198 @@ const PerfectDrill = () => {
 
       recorder.ondataavailable = (e) => chunks.push(e.data);
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
-        setRecordings(prev => ({ ...prev, [currentQuestionIndex]: URL.createObjectURL(blob) }));
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        setAudioURL(url);
+        setRecordings(prev => ({
+          ...prev,
+          [currentQuestionIndex]: url
+        }));
       };
 
       recorder.start();
-      mediaRecorderRef.current = recorder;
+      setMediaRecorder(recorder);
       setIsRecording(true);
+      setSnackbar({
+        open: true,
+        message: t.recordingStarted,
+        severity: 'info',
+      });
     } catch (error) {
-      console.error(error);
+      console.error('Error accessing microphone:', error);
+      setSnackbar({
+        open: true,
+        message: t.micError,
+        severity: 'error',
+      });
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
       setIsRecording(false);
+      setSnackbar({
+        open: true,
+        message: t.recordingStopped,
+        severity: 'success',
+      });
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
+  const previousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
+      setAudioURL(recordings[currentQuestionIndex - 1] || '');
+    }
+  };
+
+  const nextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setAudioURL(recordings[currentQuestionIndex + 1] || '');
+    }
+  };
+
+  const toggleModelAnswer = (index) => {
+    setShowModelAnswer(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
 
   return (
     <Container maxWidth="md">
       <Box sx={{ my: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          {t.title}
-        </Typography>
-        
-        {/* Question navigation */}
-        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between' }}>
-          <Button
-            variant="contained"
-            startIcon={<ArrowBackIcon />}
-            onClick={handlePreviousQuestion}
-            disabled={currentQuestionIndex === 0}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+          <Typography variant="h4" component="h1">
+            {t.title}
+          </Typography>
+          <IconButton onClick={handleLanguageClick}>
+            <LanguageIcon />
+          </IconButton>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleLanguageClose}
           >
-            {t.previous}
-          </Button>
-          <Button
-            variant="contained"
-            endIcon={<ArrowForwardIcon />}
-            onClick={handleNextQuestion}
-            disabled={currentQuestionIndex === questions.length - 1}
-          >
-            {t.next}
-          </Button>
+            <MenuItem onClick={() => handleLanguageSelect('en')}>English</MenuItem>
+            <MenuItem onClick={() => handleLanguageSelect('zh')}>中文</MenuItem>
+          </Menu>
         </Box>
 
-        {/* Current question */}
+        <Box sx={{ mb: 4 }}>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            placeholder={t.questionPlaceholder}
+            value={customQuestions}
+            onChange={(e) => setCustomQuestions(e.target.value)}
+          />
+          <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+            <Button variant="contained" onClick={handleUploadQuestions}>
+              {t.addQuestion}
+            </Button>
+            <Button variant="outlined" onClick={importQuestions}>
+              Import
+            </Button>
+            <Button variant="outlined" onClick={exportQuestions}>
+              Export
+            </Button>
+            <Button variant="outlined" onClick={saveSession}>
+              {t.saveSession}
+            </Button>
+            <Button variant="outlined" onClick={loadSession}>
+              {t.loadSession}
+            </Button>
+          </Box>
+        </Box>
+
         {questions.length > 0 ? (
-          <Card sx={{ mb: 2 }}>
-            <CardContent>
-              <Typography variant="h6" component="div">
-                {questions[currentQuestionIndex].text}
-              </Typography>
-            </CardContent>
-            <CardActions>
+          <Box>
+            <Card sx={{ mb: 2 }}>
+              <CardContent>
+                <Typography variant="h6">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 2 }}>
+                  {questions[currentQuestionIndex]}
+                </Typography>
+                {showModelAnswer[currentQuestionIndex] && (
+                  <Paper sx={{ mt: 2, p: 2, bgcolor: 'grey.100' }}>
+                    <Typography variant="body2">
+                      {modelAnswers[currentQuestionIndex] || t.noModelAnswer}
+                    </Typography>
+                  </Paper>
+                )}
+              </CardContent>
+              <CardActions>
+                <Button
+                  variant="contained"
+                  color={isRecording ? "secondary" : "primary"}
+                  startIcon={isRecording ? <StopIcon /> : <MicIcon />}
+                  onClick={isRecording ? stopRecording : startRecording}
+                >
+                  {isRecording ? t.stopRecording : t.startRecording}
+                </Button>
+                <Button onClick={() => toggleModelAnswer(currentQuestionIndex)}>
+                  {showModelAnswer[currentQuestionIndex] ? t.hideAnswer : t.showAnswer}
+                </Button>
+              </CardActions>
+            </Card>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
               <Button
                 variant="contained"
-                color={isRecording ? "secondary" : "primary"}
-                startIcon={isRecording ? <StopIcon /> : <PlayArrowIcon />}
-                onClick={isRecording ? stopRecording : startRecording}
+                startIcon={<ArrowBackIcon />}
+                onClick={previousQuestion}
+                disabled={currentQuestionIndex === 0}
               >
-                {isRecording ? t.stopRecording : t.startRecording}
+                {t.previous}
               </Button>
-            </CardActions>
-          </Card>
+              <Button
+                variant="contained"
+                endIcon={<ArrowForwardIcon />}
+                onClick={nextQuestion}
+                disabled={currentQuestionIndex === questions.length - 1}
+              >
+                {t.next}
+              </Button>
+            </Box>
+          </Box>
         ) : (
-          <Typography variant="body1" sx={{ mb: 2 }}>
+          <Typography variant="body1" sx={{ textAlign: 'center', my: 4 }}>
             {t.noQuestions}
           </Typography>
         )}
-
-        {/* Add new question */}
-        <Box sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            label={t.questionPlaceholder}
-            variant="outlined"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleAddQuestion(e.target.value);
-                e.target.value = '';
-              }
-            }}
-          />
-        </Box>
       </Box>
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        accept=".txt"
+        onChange={handleFileUpload}
+      />
+      <input
+        type="file"
+        ref={sessionInputRef}
+        style={{ display: 'none' }}
+        accept=".json"
+        onChange={handleSessionUpload}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
