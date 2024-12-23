@@ -30,7 +30,7 @@ const PerfectDrill = ({ t }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [showVoiceControls, setShowVoiceControls] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useState('');
+  const [selectedVoice, setSelectedVoice] = useState(null);
   const [voiceSpeed, setVoiceSpeed] = useState(1);
   const [voices, setVoices] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -61,7 +61,7 @@ const PerfectDrill = ({ t }) => {
       const availableVoices = window.speechSynthesis.getVoices();
       setVoices(availableVoices);
       if (availableVoices.length > 0) {
-        setSelectedVoice(availableVoices[0].name);
+        setSelectedVoice(availableVoices[0]);
       }
     };
 
@@ -162,9 +162,8 @@ const PerfectDrill = ({ t }) => {
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
-      const voice = voices.find(v => v.name === selectedVoice);
-      if (voice) {
-        utterance.voice = voice;
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
       }
       utterance.rate = voiceSpeed;
       window.speechSynthesis.speak(utterance);

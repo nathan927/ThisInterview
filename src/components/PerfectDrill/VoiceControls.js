@@ -65,16 +65,16 @@ const VoiceControls = ({
         }}>
           <InputLabel>{t.voice}</InputLabel>
           <Select
-            value={selectedVoice?.name || ''}
+            value={selectedVoice}
             onChange={(e) => {
-              const voice = availableVoices.find(v => v.name === e.target.value);
+              const voice = availableVoices.find(v => v === e.target.value);
               if (voice) setSelectedVoice(voice);
             }}
             size="small"
           >
             {availableVoices.map((voice) => (
-              <MenuItem key={voice.name} value={voice.name}>
-                {voice.name}
+              <MenuItem key={voice} value={voice}>
+                {`${voice.name} (${voice.lang})`}
               </MenuItem>
             ))}
           </Select>
