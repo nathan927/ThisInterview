@@ -12,7 +12,9 @@ import {
   DialogContentText,
   DialogTitle,
   Button,
+  useMediaQuery,
 } from '@mui/material';
+import styled from 'styled-components';
 
 import VoiceControls from './VoiceControls';
 import QuestionNavigation from './QuestionNavigation';
@@ -425,11 +427,37 @@ const PerfectDrill = ({ t }) => {
   const currentQuestion = questions[currentQuestionIndex] || '';
   const hasRecording = recordings.hasOwnProperty(currentQuestionIndex);
 
+  // Add this hook to detect mobile screens
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+
+  const ControlsContainer = styled(Box)`
+    display: flex;
+    gap: 16px;
+
+    /* Stack controls vertically on mobile */
+    @media (max-width: 600px) {
+      flex-direction: column;
+      gap: 8px;
+      
+      /* Full width buttons on mobile */
+      & > button {
+        width: 100%;
+      }
+    }
+  `;
+
+  const handleTouchStart = (e) => {
+    if (isMobile) {
+      // Mobile-specific touch handling
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ 
       py: { xs: 2, sm: 4 },
       px: { xs: 2, sm: 4, md: 6 },
-      maxWidth: '1400px'
+      maxWidth: '1400px',
+      pb: { xs: '120px', sm: 4 },
     }}>
       <StyledTitle component="h1">
         {t.title}
@@ -555,6 +583,24 @@ const PerfectDrill = ({ t }) => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <Box
+        onTouchStart={handleTouchStart}
+        sx={{
+          // Disable hover effects on mobile
+          '@media (max-width: 600px)': {
+            '&:hover': {
+              backgroundColor: 'transparent'
+            }
+          }
+        }}
+      >
+        {isMobile ? (
+          <MobileComponent />
+        ) : (
+          <DesktopComponent />
+        )}
+      </Box>
     </Container>
   );
 };

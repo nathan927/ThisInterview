@@ -3,10 +3,12 @@ import {
   Box,
   IconButton,
   Tooltip,
+  Button,
 } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import StopIcon from '@mui/icons-material/Stop';
 import DeleteIcon from '@mui/icons-material/Delete';
+import styled from 'styled-components';
 
 const RecordingControls = ({
   t,
@@ -17,18 +19,30 @@ const RecordingControls = ({
   currentQuestionIndex,
   setShowDeleteRecordingDialog,
 }) => {
+  const RecordingButton = styled(Button)`
+    /* Mobile-specific touch targets */
+    @media (max-width: 600px) {
+      min-height: 48px;  // Larger touch target
+      margin: 8px 0;     // More spacing between buttons
+      
+      /* Prevent text selection on touch */
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+  `;
+
   return (
     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', my: 2 }}>
       {!isRecording ? (
         <Tooltip title={t.startRecording}>
-          <IconButton
+          <RecordingButton
             onClick={startRecording}
             sx={{
               animation: recordings[currentQuestionIndex] ? 'none' : 'pulse 2s infinite'
             }}
           >
             <MicIcon />
-          </IconButton>
+          </RecordingButton>
         </Tooltip>
       ) : (
         <Tooltip title={t.stopRecording}>

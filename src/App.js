@@ -73,6 +73,10 @@ const theme = createTheme({
         root: {
           textTransform: 'none',
           borderRadius: 8,
+          '@media (max-width: 600px)': {
+            fontSize: '14px',
+            padding: '10px 16px',
+          }
         },
       },
     },

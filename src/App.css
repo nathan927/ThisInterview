@@ -22,3 +22,15 @@
 .ant-typography {
   margin: 0;
 }
+
+@media (max-width: 600px) {
+  .question-text {
+    font-size: 18px;
+    line-height: 1.4;
+  }
+  
+  .control-button {
+    padding: 12px;
+    margin: 4px 0;
+  }
+}

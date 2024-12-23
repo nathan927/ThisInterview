@@ -12,6 +12,24 @@ import {
   Menu,
 } from '@mui/material';
 import LanguageIcon from '@mui/icons-material/Language';
+import styled from 'styled-components';
+
+// Create styled components for mobile-specific layout
+const MobileControlsWrapper = styled(Box)`
+  @media (max-width: 600px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 12px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+`;
 
 const VoiceControls = ({
   t,
@@ -26,87 +44,94 @@ const VoiceControls = ({
   handleLanguageSelect,
 }) => {
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      gap: 2, 
-      alignItems: 'center',
-      flexWrap: 'wrap',
-      width: '100%',
-      justifyContent: 'center',
-      position: { xs: 'fixed', sm: 'static' },
-      bottom: { xs: 0, sm: 'auto' },
-      left: { xs: 0, sm: 'auto' },
-      right: { xs: 0, sm: 'auto' },
-      bgcolor: 'background.paper',
-      p: 2,
-      zIndex: { xs: 1000, sm: 1 },
-      flexDirection: { xs: 'column', sm: 'row' },
-      boxShadow: { 
-        xs: '0px -2px 4px rgba(0, 0, 0, 0.1)', 
-        sm: 'none' 
-      },
-      mb: { xs: 0, sm: 2 }
-    }}>
-      <FormControl sx={{ width: { xs: '100%', sm: 200 } }}>
-        <InputLabel>{t.voice}</InputLabel>
-        <Select
-          value={selectedVoice?.name || ''}
-          onChange={(e) => {
-            const voice = availableVoices.find(v => v.name === e.target.value);
-            if (voice) setSelectedVoice(voice);
-          }}
-        >
-          {availableVoices.map((voice) => (
-            <MenuItem key={voice.name} value={voice.name}>
-              {voice.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      <Box sx={{ width: { xs: '100%', sm: 200 } }}>
-        <Typography gutterBottom>
-          {t.speed}: {readingSpeed}x
-        </Typography>
-        <Slider
-          value={readingSpeed}
-          onChange={handleSpeedChange}
-          min={0.5}
-          max={2}
-          step={0.1}
-          marks
-          valueLabelDisplay="auto"
-        />
-      </Box>
-
-      <Box sx={{
-        position: { xs: 'absolute', sm: 'static' },
-        top: { xs: 2, sm: 'auto' },
-        right: { xs: 2, sm: 'auto' }
+    <MobileControlsWrapper>
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 2, 
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        width: '100%',
+        justifyContent: 'center',
+        '@media (max-width: 600px)': {
+          flexDirection: 'column',
+          gap: 1
+        }
       }}>
-        <Tooltip title={t.changeLanguage}>
-          <IconButton
-            onClick={handleLanguageClick}
+        <FormControl sx={{ 
+          width: { xs: '100%', sm: 200 },
+          '@media (max-width: 600px)': {
+            marginBottom: 1
+          }
+        }}>
+          <InputLabel>{t.voice}</InputLabel>
+          <Select
+            value={selectedVoice?.name || ''}
+            onChange={(e) => {
+              const voice = availableVoices.find(v => v.name === e.target.value);
+              if (voice) setSelectedVoice(voice);
+            }}
             size="small"
-            sx={{ ml: 1 }}
           >
-            <LanguageIcon />
-          </IconButton>
-        </Tooltip>
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleLanguageClose}
-        >
-          <MenuItem onClick={() => handleLanguageSelect('en')}>
-            English
-          </MenuItem>
-          <MenuItem onClick={() => handleLanguageSelect('zh')}>
-            中文
-          </MenuItem>
-        </Menu>
+            {availableVoices.map((voice) => (
+              <MenuItem key={voice.name} value={voice.name}>
+                {voice.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Box sx={{ 
+          width: { xs: '100%', sm: 200 },
+          '@media (max-width: 600px)': {
+            marginBottom: 1
+          }
+        }}>
+          <Typography gutterBottom>
+            {t.speed}: {readingSpeed}x
+          </Typography>
+          <Slider
+            value={readingSpeed}
+            onChange={handleSpeedChange}
+            min={0.5}
+            max={2}
+            step={0.1}
+            marks
+            valueLabelDisplay="auto"
+            size="small"
+          />
+        </Box>
+
+        <Box sx={{
+          '@media (max-width: 600px)': {
+            position: 'absolute',
+            top: -40,
+            right: 12
+          }
+        }}>
+          <Tooltip title={t.changeLanguage}>
+            <IconButton
+              onClick={handleLanguageClick}
+              size="small"
+            >
+              <LanguageIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
-    </Box>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleLanguageClose}
+      >
+        <MenuItem onClick={() => handleLanguageSelect('en')}>
+          English
+        </MenuItem>
+        <MenuItem onClick={() => handleLanguageSelect('zh')}>
+          中文
+        </MenuItem>
+      </Menu>
+    </MobileControlsWrapper>
   );
 };
 
